@@ -1,21 +1,38 @@
 from pymongo import MongoClient
-from ..constants.database_constants import BUSSE_REBATE_TRACES, BUSSE_PRICING
-from ..constants.environ import MONGODB_URI
+
+from constants import BUSSE_REBATE_TRACES, BUSSE_REBATE_TRACES_COLLECTIONS, BUSSE_PRICING, BUSSE_PRICING_COLLECTIONS, MONGODB_URI, DATABASES
+
+from pymongo.collection import Collection
+from pymongo.database import Database
 
 
-__rebate_db__ = MongoClient(MONGODB_URI)[BUSSE_REBATE_TRACES]
-__pricing_db__ = MongoClient(MONGODB_URI)[BUSSE_PRICING]
+def GET_CLIENT() -> MongoClient:
+    return MongoClient(MONGODB_URI)
 
-# exports
 
-tracings = __rebate_db__.tracings
-sched_data = __rebate_db__.sched_data
-contracts = __rebate_db__.contracts
-confidence_check = __rebate_db__.confidence_check
+def GET_DATABASE(client: MongoClient, DATABASE: str) -> Database:
+    __db__ = DATABASE.upper().strip()
 
-data_warehouse = __rebate_db__.data_warehouse
-discrepancies = __rebate_db__.discrepancies
+    if __db__ == BUSSE_REBATE_TRACES:
+        assert __db__ in DATABASES, f"{DATABASE} not in the databases list, check database_constants.py"
 
-pricing_contracts = __pricing_db__.contract_prices
+        return client[DATABASES[__db__]]
 
-# /exports
+    if __db__ == BUSSE_PRICING:
+        assert __db__ in DATABASES, f"{DATABASE} not in the databases list, check database_constants.py"
+
+        return client[DATABASES[__db__]]
+
+    return None
+
+
+def GET_COLLECTION(db: Database, collection_key: str) -> Collection:
+    __db_name__ = db.name
+
+    if __db_name__ == DATABASES[BUSSE_REBATE_TRACES]:
+        return db[BUSSE_REBATE_TRACES_COLLECTIONS[collection_key]]
+
+    if __db_name__ == DATABASES[BUSSE_PRICING]:
+        return db[BUSSE_PRICING_COLLECTIONS[collection_key]]
+
+    return None
