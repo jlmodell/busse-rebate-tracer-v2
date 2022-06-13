@@ -1,0 +1,14 @@
+/Lib
+/lib
+/bin
+/Scripts
+/**/__pycache__
+/.vscode
+
+/**/*.cfg
+/**/*.html
+/**/*.xls
+/**/*.xlsx
+/**/*.xlsm
+
+/**/*.env*
