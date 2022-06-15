@@ -12,3 +12,6 @@
 /**/*.xlsm
 
 /**/*.env*
+
+/build
+/dist

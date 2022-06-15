@@ -1,5 +1,5 @@
 from .connector import *
-from constants import CONTRACTS
+from constants import CONTRACTS, PRICING_CONTRACTS
 
 
 def gc_rbt(collection_key: str) -> Collection:
@@ -31,6 +31,18 @@ def get_current_contracts():
 
     return {x["contract"]: x["gpo"]
             for x in list(collection.find({"valid": True}))}
+
+
+def find_contract_by_contract_number(contract_number: str = None) -> dict:
+    assert contract_number is not None, "contract_number cannot be None"
+
+    collection = gc_bp(PRICING_CONTRACTS)
+
+    res = collection.find_one({
+        "contractnumber": contract_number,
+    }, {"_id": 0})
+
+    return res
 
 
 def get_documents(collection: Collection, filter: dict) -> list:
