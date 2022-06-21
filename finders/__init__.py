@@ -5,7 +5,10 @@ from rich import print
 
 from constants import PRICING_CONTRACTS, TRACINGS
 from database import gc_rbt, gc_bp, find_contract_by_contract_number
-from s3_functions import save_df_to_s3_as_excel, save_tracings_df_as_html_with_javascript_css
+from s3_functions import (
+    save_df_to_s3_as_excel,
+    save_tracings_df_as_html_with_javascript_css,
+)
 from .tracings import *
 
 
@@ -18,19 +21,43 @@ def find_contract_price(contract: str = None, part: str = None) -> float:
 
     collection = gc_bp(PRICING_CONTRACTS)
 
-    res = collection.find_one({
-        "contractnumber": contract,
-        "pricingagreements.item": part,
-    }, {
-        "_id": 0,
-        "pricingagreements": {
-            "$elemMatch": {
-                "item": part,
-            }
+    res = collection.find_one(
+        {
+            "contractnumber": contract,
+            "pricingagreements.item": part,
         },
-    })
+        {
+            "_id": 0,
+            "pricingagreements": {
+                "$elemMatch": {
+                    "item": part,
+                }
+            },
+        },
+    )
 
     return res["pricingagreements"][0]["price"] if res else 0.0
+
+
+@lru_cache(maxsize=None)
+def find_contract_name(contract: str = None) -> str:
+    assert contract is not None, "contract cannot be None"
+
+    contract = contract.upper().strip()
+
+    collection = gc_bp(PRICING_CONTRACTS)
+
+    res = collection.find_one(
+        {
+            "contractnumber": contract,
+        },
+        {
+            "_id": 0,
+            "contractname": 1,
+        },
+    )
+
+    return res["contractname"] if res else contract
 
 
 def find_tracings_by_period(period: str = None) -> pd.DataFrame:
@@ -38,23 +65,18 @@ def find_tracings_by_period(period: str = None) -> pd.DataFrame:
 
     aggregation = []
 
-    aggregation.append({
-        "$match": {
-            "period": {
-                "$regex": period,
-                "$options": "i"
+    aggregation.append({"$match": {"period": {"$regex": period, "$options": "i"}}})
+
+    aggregation.append(
+        {
+            "$lookup": {
+                "from": "sched_data",
+                "localField": "part",
+                "foreignField": "part",
+                "as": "part_data",
             }
         }
-    })
-
-    aggregation.append({
-        "$lookup": {
-            "from": "sched_data",
-            "localField": "part",
-            "foreignField": "part",
-            "as": "part_data"
-        }
-    })
+    )
 
     collection = gc_rbt(TRACINGS)
 
@@ -68,21 +90,39 @@ def find_tracings_by_period(period: str = None) -> pd.DataFrame:
     for contract in contracts_unique:
         contracts[contract] = find_contract_by_contract_number(contract)
         if contracts[contract] is not None:
-            contracts[contract] = {x["item"]: x["price"]
-                                   for x in contracts[contract]["pricingagreements"]}
+            contracts[contract] = {
+                x["item"]: x["price"] for x in contracts[contract]["pricingagreements"]
+            }
         else:
             contracts[contract] = {}
             print(contract, "not found")
 
     df["contract_price"] = df.apply(
-        lambda x: contracts.get(x['contract']).get(x['part'], 0.0), axis=1)
+        lambda x: contracts.get(x["contract"]).get(x["part"], 0.0), axis=1
+    )
+
+    df["contract_name"] = df["contract"].apply(find_contract_name)
 
     return df
 
 
-def find_tracings_and_save(month: str = None, year: str = None, overwrite: bool = False) -> pd.DataFrame:
-    months = ["january", "february", "march", "april", "may", "june",
-              "july", "august", "september", "october", "november", "december"]
+def find_tracings_and_save(
+    month: str = None, year: str = None, overwrite: bool = False
+) -> pd.DataFrame:
+    months = [
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+    ]
     re_year = re.compile(r"^\d{4}$")
 
     assert month is not None, "month cannot be None"
@@ -101,8 +141,10 @@ def find_tracings_and_save(month: str = None, year: str = None, overwrite: bool 
 
     if overwrite:
         save_tracings_df_as_html_with_javascript_css(
-            df_with_summary, f"output/{period}/", "dist_by_contract_by_part.html")
+            df_with_summary, f"output/{period}/", "dist_by_contract_by_part.html"
+        )
         save_df_to_s3_as_excel(
-            df, f"output/{period}/", "tracings_by_distributor_by_contract_by_part.xlsm")
+            df, f"output/{period}/", "tracings_by_distributor_by_contract_by_part.xlsm"
+        )
 
     return df_with_summary
