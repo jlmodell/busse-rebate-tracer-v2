@@ -13,8 +13,7 @@ def CLEANUP_TRACINGS_DF(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.loc[df["part"].isin(LIST_OF_DISTINCT_PARTS), :].copy()
 
-    df["each_size"] = df["part_data"].apply(
-        lambda x: x[0].get("each_per_case", 0))
+    df["each_size"] = df["part_data"].apply(lambda x: x[0].get("each_per_case", 0))
 
     df["unit_rebate_as_cs"] = df.apply(
         lambda x: x.get("rebate") / x.get("ship_qty_as_cs")
@@ -51,7 +50,8 @@ def TRANSFORM_BY_DISTRIBUTOR_BY_CONTRACT_BY_PART(df: pd.DataFrame) -> Tuple:
     df = pd.DataFrame(
         df[df["contract"] != ""]
         .groupby(
-            ["period", "contract", "part", "uom", "contract_price"], as_index=False
+            ["period", "contract", "part", "uom", "contract_price", "contract_name"],
+            as_index=False,
         )  # added "uom" removed "each_size"
         .sum(["ship_qty", "ship_qty_as_cs", "rebate", "cost"])
     )
@@ -77,9 +77,7 @@ def TRANSFORM_BY_DISTRIBUTOR_BY_CONTRACT_BY_PART(df: pd.DataFrame) -> Tuple:
         lambda x: x["ship_qty_as_cs_partial"] * x["unit_rebate_as_cs"], axis=1
     )
 
-    df["each_size"] = df["part"].apply(
-        lambda x: items.get(x)
-    )
+    df["each_size"] = df["part"].apply(lambda x: items.get(x))
 
     df = df[
         [
@@ -91,6 +89,7 @@ def TRANSFORM_BY_DISTRIBUTOR_BY_CONTRACT_BY_PART(df: pd.DataFrame) -> Tuple:
             # "gpo",
             "each_size",
             "contract",
+            "contract_name",
             "part",
             "contract_price",
             "ship_qty",  # added
@@ -111,9 +110,7 @@ def TRANSFORM_BY_DISTRIBUTOR_BY_CONTRACT_BY_PART(df: pd.DataFrame) -> Tuple:
     df_with_summary = pd.DataFrame()
 
     for period in unique_periods:
-        df_temp = df.loc[
-            df["period"] == period, :
-        ].copy()
+        df_temp = df.loc[df["period"] == period, :].copy()
 
         df_temp_sum_row = pd.DataFrame(
             data=df_temp[
