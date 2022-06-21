@@ -180,6 +180,8 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
     kwargs = get_field_file_body_and_decode_kwargs(
         prefix="input/", key=fields_file)
 
+    print(kwargs)
+
     # initialize variables for dataframe from fields_file
 
     filter = kwargs.get("filter", None)
@@ -187,6 +189,9 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
 
     assert filter is not None, "filter is required"
     assert period is not None, "period is required"
+
+    contract_map = kwargs.get("contract_map", None)
+    skip_license = kwargs.get("skip_license", False)
 
     contract = kwargs.get("contract")
     claim_nbr = kwargs.get("claim_nbr")
@@ -251,6 +256,9 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
     df[hidden] = df.apply(lambda _: period, axis=1)
 
     df = df[df[name].notna()].copy()
+
+    if contract_map:
+        df[contract] = df[contract].apply(lambda x: contract_map.get(x, x))
 
     if addr != None:
         df[addr] = df[addr].apply(
@@ -400,20 +408,25 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
 
     # add license and search score and a check column
 
-    print("add_license() >\t", add_license.cache_info())
-    df["temp"] = df.apply(
-        lambda x: add_license(
-            x[gpo], x[name], x[addr], x[city], x[state]),
-        axis=1,
-    )
-    print("add_license() >\t", add_license.cache_info())
+    if skip_license:
+        df[lic] = ""
+        df[score] = 99
+        df[check] = False
+    else:
+        print("add_license() >\t", add_license.cache_info())
+        df["temp"] = df.apply(
+            lambda x: add_license(
+                x[gpo], x[name], x[addr], x[city], x[state]),
+            axis=1,
+        )
+        print("add_license() >\t", add_license.cache_info())
 
-    df[lic] = df.apply(lambda x: str(x["temp"].split("|")[0]), axis=1)
-    df[score] = df.apply(lambda x: float(x["temp"].split("|")[1]), axis=1)
+        df[lic] = df.apply(lambda x: str(x["temp"].split("|")[0]), axis=1)
+        df[score] = df.apply(lambda x: float(x["temp"].split("|")[1]), axis=1)
 
-    # calculate confidence minimum
-    confidence_min = df[score].mean() * 0.85
-    df[check] = df.apply(lambda x: x[score] <= confidence_min, axis=1)
+        # calculate confidence minimum
+        confidence_min = df[score].mean() * 0.85
+        df[check] = df.apply(lambda x: x[score] <= confidence_min, axis=1)
 
     # /add license and search score and a check column
 
