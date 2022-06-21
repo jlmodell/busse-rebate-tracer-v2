@@ -3,7 +3,7 @@ from functools import lru_cache
 import re
 from rich import print
 
-from constants import PRICING_CONTRACTS, TRACINGS
+from constants import CONTRACTS, PRICING_CONTRACTS, TRACINGS
 from database import gc_rbt, gc_bp, find_contract_by_contract_number
 from s3_functions import save_df_to_s3_as_excel, save_tracings_df_as_html_with_javascript_css
 from .tracings import *
@@ -31,6 +31,27 @@ def find_contract_price(contract: str = None, part: str = None) -> float:
     })
 
     return res["pricingagreements"][0]["price"] if res else 0.0
+
+# @lru_cache(maxsize=None)
+# def find_contract_price(contract: str = None, part: str = None) -> float:
+#     assert contract is not None, "contract cannot be None"
+
+#     contract = contract.upper().strip()
+#     part = part.upper().strip()
+
+#     collection = gc_rbt(CONTRACTS)
+
+#     res = collection.find_one({
+#         "contract": contract,
+#         f"agreement.{part}": {
+#             "$exists": True,
+#         },
+#     }, {
+#         "_id": 0,
+#         f"agreement.{part}": 1,
+#     })
+
+#     return res["agreement"][0][part] if res else 0.0
 
 
 def find_tracings_by_period(period: str = None) -> pd.DataFrame:

@@ -84,6 +84,7 @@ def ingest_concordance_data_files(folder_path: str, year: str, month: str, overw
     print(sum_total)
 
 
+@lru_cache(maxsize=None)
 def find_license(
         collection: Collection = roster_collection,
         group: str = "",
