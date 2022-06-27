@@ -13,7 +13,8 @@ from transformers import *
 
 if __name__ == "__main__":
     if len(sys.argv) <= 1:
-        print("""
+        print(
+            """
     Usage:
 
     --ingest_file --file_path=<file_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false>
@@ -37,14 +38,17 @@ if __name__ == "__main__":
 
     python main.py --debug
     python main.py --test
-""")
+"""
+        )
 
     if len(sys.argv) > 1:
         if sys.argv[1] == "--help":
-            print("""
+            print(
+                """
             Usage:
             python main.py
-            """)
+            """
+            )
             sys.exit(0)
 
         elif sys.argv[1] == "--debug":
@@ -60,8 +64,9 @@ if __name__ == "__main__":
 
             assert "fields_file" in options, "fields_file is required"
 
-            print(get_field_file_body_and_decode_kwargs(
-                "input/", options["fields_file"]))
+            print(
+                get_field_file_body_and_decode_kwargs("input/", options["fields_file"])
+            )
 
         elif sys.argv[1] == "--update_fields_file":
             options = {}
@@ -77,23 +82,34 @@ if __name__ == "__main__":
 
             options["filter"] = json.loads(options["filter"])
 
-            assert "file_path" in options, "file_path is required"
+            # assert "file_path" in options, "file_path is required"
             assert "month" in options, "month is required"
             assert "year" in options, "year is required"
 
             try:
                 if options["overwrite"]:
-                    options["overwrite"] = True if options["overwrite"].lower(
-                    ).startswith("t") else False
+                    options["overwrite"] = (
+                        True if options["overwrite"].lower().startswith("t") else False
+                    )
             except KeyError:
                 options["overwrite"] = False
-                print("\n\tOverwrite: \t> ", options["overwrite"],
-                      "\t> ", "set `--overwrite=true` to overwrite\n")
+                print(
+                    "\n\tOverwrite: \t> ",
+                    options["overwrite"],
+                    "\t> ",
+                    "set `--overwrite=true` to overwrite\n",
+                )
 
             if options["overwrite"]:
                 print(f"Overwriting {options['fields_file']}")
                 update_field_file_body_and_save(
-                    "input/", options["fields_file"], options["filter"], options["file_path"], options["month"], options["year"])
+                    "input/",
+                    options["fields_file"],
+                    options["filter"],
+                    options["month"],
+                    options["year"],
+                    period=options.get("period", None),
+                )
 
         elif sys.argv[1] == "--ingest_file":
             options = {}
@@ -104,12 +120,17 @@ if __name__ == "__main__":
 
             try:
                 if options["overwrite"]:
-                    options["overwrite"] = True if options["overwrite"].lower(
-                    ).startswith("t") else False
+                    options["overwrite"] = (
+                        True if options["overwrite"].lower().startswith("t") else False
+                    )
             except KeyError:
                 options["overwrite"] = False
-                print("\n\tOverwrite: \t> ", options["overwrite"],
-                      "\t> ", "set `--overwrite=true` to overwrite\n")
+                print(
+                    "\n\tOverwrite: \t> ",
+                    options["overwrite"],
+                    "\t> ",
+                    "set `--overwrite=true` to overwrite\n",
+                )
 
             assert "file_path" in options, "--file_path is required"
             assert "year" in options, "--year is required"
@@ -131,12 +152,17 @@ if __name__ == "__main__":
 
             try:
                 if options["overwrite"]:
-                    options["overwrite"] = True if options["overwrite"].lower(
-                    ).startswith("t") else False
+                    options["overwrite"] = (
+                        True if options["overwrite"].lower().startswith("t") else False
+                    )
             except KeyError:
                 options["overwrite"] = False
-                print("\n\tOverwrite: \t> ", options["overwrite"],
-                      "\t> ", "set `--overwrite=true` to overwrite\n")
+                print(
+                    "\n\tOverwrite: \t> ",
+                    options["overwrite"],
+                    "\t> ",
+                    "set `--overwrite=true` to overwrite\n",
+                )
 
             assert "folder_path" in options, "--folder_path is required"
             assert "year" in options, "--year is required"
@@ -158,30 +184,36 @@ if __name__ == "__main__":
 
             try:
                 if options["overwrite"]:
-                    options["overwrite"] = True if options["overwrite"].lower(
-                    ).startswith("t") else False
+                    options["overwrite"] = (
+                        True if options["overwrite"].lower().startswith("t") else False
+                    )
             except KeyError:
                 options["overwrite"] = False
-                print("\n\tOverwrite: \t> ", options["overwrite"],
-                      "\t> ", "set `--overwrite=true` to overwrite\n")
+                print(
+                    "\n\tOverwrite: \t> ",
+                    options["overwrite"],
+                    "\t> ",
+                    "set `--overwrite=true` to overwrite\n",
+                )
 
             assert "fields_file" in options, "fields_file is required"
 
             fields_file = get_field_file_body_and_decode_kwargs(
-                "input/", options["fields_file"])
+                "input/", options["fields_file"]
+            )
 
             print(fields_file.get("period"))
 
             df = build_df_from_warehouse_using_fields_file(
-                fields_file=options["fields_file"])
+                fields_file=options["fields_file"]
+            )
 
             print(df)
 
             if options["overwrite"]:
                 collection = gc_rbt(TRACINGS)
 
-                delete_documents(collection, {
-                    "period": fields_file.get("period")})
+                delete_documents(collection, {"period": fields_file.get("period")})
 
                 insert_documents(collection, df.to_dict(orient="records"))
 
@@ -197,17 +229,22 @@ if __name__ == "__main__":
 
             try:
                 if options["overwrite"]:
-                    options["overwrite"] = True if options["overwrite"].lower(
-                    ).startswith("t") else False
+                    options["overwrite"] = (
+                        True if options["overwrite"].lower().startswith("t") else False
+                    )
             except KeyError:
                 options["overwrite"] = False
-                print("\n\tOverwrite: \t> ", options["overwrite"],
-                      "\t> ", "set `--overwrite=true` to overwrite\n")
+                print(
+                    "\n\tOverwrite: \t> ",
+                    options["overwrite"],
+                    "\t> ",
+                    "set `--overwrite=true` to overwrite\n",
+                )
 
             df = find_tracings_and_save(
                 month=options["month"],
                 year=options["year"],
-                overwrite=options["overwrite"]
+                overwrite=options["overwrite"],
             )
 
             if options["overwrite"]:
@@ -230,12 +267,17 @@ if __name__ == "__main__":
 
             try:
                 if options["overwrite"]:
-                    options["overwrite"] = True if options["overwrite"].lower(
-                    ).startswith("t") else False
+                    options["overwrite"] = (
+                        True if options["overwrite"].lower().startswith("t") else False
+                    )
             except KeyError:
                 options["overwrite"] = False
-                print("\n\tOverwrite: \t> ", options["overwrite"],
-                      "\t> ", "set `--overwrite=true` to overwrite\n")
+                print(
+                    "\n\tOverwrite: \t> ",
+                    options["overwrite"],
+                    "\t> ",
+                    "set `--overwrite=true` to overwrite\n",
+                )
 
             collection = gc_rbt(DATA_WAREHOUSE)
 
@@ -251,16 +293,15 @@ if __name__ == "__main__":
             # 0
             print(gc_rbt("tracings"))
             # 1
-            print(get_field_file_body_and_decode_kwargs(
-                "input/", "cardinal.json"))
+            print(get_field_file_body_and_decode_kwargs("input/", "cardinal.json"))
             # 2
             save_df_to_s3_as_excel(df, prefix, "test.xlsm")
             # 3
-            save_tracings_df_as_html_with_javascript_css(
-                df, prefix, "test.html")
+            save_tracings_df_as_html_with_javascript_css(df, prefix, "test.html")
             # 4
             file_path = os.path.join(
-                os.environ["USERPROFILE"], "Downloads", "MGM_06112022_091341.xlsx")
+                os.environ["USERPROFILE"], "Downloads", "MGM_06112022_091341.xlsx"
+            )
             ingest_to_data_warehouse(
                 file_path=file_path,
                 year="2022",
