@@ -7,8 +7,20 @@ from pymongo.collection import Collection
 
 from rich import print
 
-from constants import DATA_WAREHOUSE, ROSTERS, SCHED_DATA, DATA_WAREHOUSE, VHA_VIZIENT_MEDASSETS
-from database import gc_rbt, get_documents, insert_documents, delete_documents, get_current_contracts
+from constants import (
+    DATA_WAREHOUSE,
+    ROSTERS,
+    SCHED_DATA,
+    DATA_WAREHOUSE,
+    VHA_VIZIENT_MEDASSETS,
+)
+from database import (
+    gc_rbt,
+    get_documents,
+    insert_documents,
+    delete_documents,
+    get_current_contracts,
+)
 from s3_functions import get_field_file_body_and_decode_kwargs, SET_COLUMNS
 
 from .ingest import *
@@ -31,7 +43,7 @@ def ingest_to_data_warehouse(
     assert month is not None, "month is required"
     assert os.path.exists(file_path) == True, "File not found"
 
-    dtype = GET_DTYPES(file_path, delimiter=delimiter)
+    dtype = GET_DTYPES(file_path, delimiter=delimiter, header_row=header_row)
 
     assert len(dtype) > 0, "No columns found"
 
@@ -48,23 +60,25 @@ def ingest_to_data_warehouse(
             header=header_row if header_row != -1 else None,
         )
 
-    df = GET_CLEAN_DF_TO_INGEST(
-        df=df, file_path=file_path, month=month, year=year)
+    df = GET_CLEAN_DF_TO_INGEST(df=df, file_path=file_path, month=month, year=year)
+
+    print(df)
 
     if overwrite:
         collection = gc_rbt(DATA_WAREHOUSE)
 
         print("Overwriting")
 
-        delete_documents(collection, {"__file__": os.path.basename(
-            file_path)})
+        delete_documents(collection, {"__file__": os.path.basename(file_path)})
 
         insert_documents(collection, df.to_dict("records"))
 
     return df
 
 
-def ingest_concordance_data_files(folder_path: str, year: str, month: str, overwrite: bool = False):
+def ingest_concordance_data_files(
+    folder_path: str, year: str, month: str, overwrite: bool = False
+):
     assert folder_path is not None, "folder path is required"
 
     file_paths = glob(os.path.join(folder_path, "*.xls*"))
@@ -86,13 +100,14 @@ def ingest_concordance_data_files(folder_path: str, year: str, month: str, overw
 
 @lru_cache(maxsize=None)
 def find_license(
-        collection: Collection = roster_collection,
-        group: str = "",
-        name: str = None,
-        address: str = None,
-        city: str = None,
-        state: str = None,
-        debug: bool = False,):
+    collection: Collection = roster_collection,
+    group: str = "",
+    name: str = None,
+    address: str = None,
+    city: str = None,
+    state: str = None,
+    debug: bool = False,
+):
     # initialize return values
     member_id: str = "0"
     score: float = 0.0
@@ -101,7 +116,8 @@ def find_license(
         return member_id, score
 
     aggregation = BUILD_AGGREGATION(
-        group=group, name=name, address=address, city=city, state=state)
+        group=group, name=name, address=address, city=city, state=state
+    )
 
     result = list(collection.aggregate(aggregation))
 
@@ -153,10 +169,11 @@ def add_license(gpo: str, name: str, address: str, city: str, state: str) -> str
     assert len(gpo) > 0, "gpo is required"
     assert len(name) > 0, "name is required"
 
-    lic, score = find_license(group=gpo, name=name,
-                              address=address, city=city, state=state)
+    lic, score = find_license(
+        group=gpo, name=name, address=address, city=city, state=state
+    )
 
-    return f'{lic}|{score}'
+    return f"{lic}|{score}"
 
 
 @lru_cache(maxsize=None)
@@ -178,8 +195,7 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
     score = "SCORE"
     cs_conv = "SHIP QTY AS CS"
 
-    kwargs = get_field_file_body_and_decode_kwargs(
-        prefix="input/", key=fields_file)
+    kwargs = get_field_file_body_and_decode_kwargs(prefix="input/", key=fields_file)
 
     print(kwargs)
 
@@ -262,8 +278,7 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
         df[contract] = df[contract].apply(lambda x: contract_map.get(x, x))
 
     if addr != None:
-        df[addr] = df[addr].apply(
-            lambda x: x.lower().lstrip('="').rstrip('"').strip())
+        df[addr] = df[addr].apply(lambda x: x.lower().lstrip('="').rstrip('"').strip())
 
     if addr1 and addr2:
         df[addr1] = df[addr1].apply(
@@ -303,11 +318,9 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
         else str(x)
     )
 
-    df[name] = df[name].apply(
-        lambda x: x.lower().lstrip('="').rstrip('"').strip())
+    df[name] = df[name].apply(lambda x: x.lower().lstrip('="').rstrip('"').strip())
 
-    df[city] = df[city].apply(
-        lambda x: x.lower().lstrip('="').rstrip('"').strip())
+    df[city] = df[city].apply(lambda x: x.lower().lstrip('="').rstrip('"').strip())
 
     df[cost] = df[cost].apply(
         lambda x: x.strip().lower().lstrip('="$').rstrip('"')
@@ -315,14 +328,12 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
         else x
     )
 
-    df[state] = df[state].apply(
-        lambda x: x.strip().lower().lstrip('="').rstrip('"'))
+    df[state] = df[state].apply(lambda x: x.strip().lower().lstrip('="').rstrip('"'))
     df[claim_nbr] = df[claim_nbr].apply(
         lambda x: str(x).rstrip(".0").lower().lstrip('="').rstrip('"').strip()
     )
 
-    df[[cost, ship_qty, rebate]] = df[[
-        cost, ship_qty, rebate]].apply(pd.to_numeric)
+    df[[cost, ship_qty, rebate]] = df[[cost, ship_qty, rebate]].apply(pd.to_numeric)
 
     try:
         df[invoice_date] = df[invoice_date].apply(pd.to_datetime)
@@ -377,8 +388,7 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
         lambda x: str(x).rstrip(".0").lower().lstrip('="').rstrip('"').strip()
     )
     df[contract] = df[contract].apply(
-        lambda x: x.lstrip('="').rstrip(
-            '"').strip() if isinstance(x, str) else ""
+        lambda x: x.lstrip('="').rstrip('"').strip() if isinstance(x, str) else ""
     )
 
     if unit_rebate:
@@ -389,8 +399,7 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
         df[unit_rebate] = df.apply(lambda x: x[rebate] / x[ship_qty], axis=1)
 
     if cost_calculation == "cost - rebate * ship_qty":
-        df[cost] = df.apply(lambda x: (
-            x[cost] - x[unit_rebate]) * x[ship_qty], axis=1)
+        df[cost] = df.apply(lambda x: (x[cost] - x[unit_rebate]) * x[ship_qty], axis=1)
     elif cost_calculation == "cost * ship_qty":
         df[cost] = df.apply(lambda x: x[cost] * x[ship_qty], axis=1)
 
@@ -416,8 +425,7 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
     else:
         print("add_license() >\t", add_license.cache_info())
         df["temp"] = df.apply(
-            lambda x: add_license(
-                x[gpo], x[name], x[addr], x[city], x[state]),
+            lambda x: add_license(x[gpo], x[name], x[addr], x[city], x[state]),
             axis=1,
         )
         print("add_license() >\t", add_license.cache_info())
@@ -433,13 +441,14 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
 
     # convert uom
 
-    print("find_item_and_convert_uom() >\t",
-          find_item_and_convert_uom.cache_info())
+    print("find_item_and_convert_uom() >\t", find_item_and_convert_uom.cache_info())
     df[cs_conv] = df.apply(
-        lambda x: find_item_and_convert_uom(str(x[part]).lstrip("0"), x[uom], x[ship_qty]), axis=1
+        lambda x: find_item_and_convert_uom(
+            str(x[part]).lstrip("0"), x[uom], x[ship_qty]
+        ),
+        axis=1,
     )
-    print("find_item_and_convert_uom() >\t",
-          find_item_and_convert_uom.cache_info())
+    print("find_item_and_convert_uom() >\t", find_item_and_convert_uom.cache_info())
 
     # /convert uom
 

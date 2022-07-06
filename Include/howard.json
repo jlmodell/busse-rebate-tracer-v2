@@ -1,0 +1,33 @@
+{
+    "file": "Howard_Medical_202206.xlsx",
+    "header": 0,
+    "delimiter": ",",
+    "period": "MOHAWK",
+    "month": "june",
+    "year": "2022",
+    "filter": {
+        "__file__": "Howard_Medical_202206.xlsx",
+        "__month__": "06",
+        "__year__": "2022"
+    },
+    "contract": "Contract",
+    "cull_missing_contracts": false,
+    "claim_nbr": "Invoice",
+    "order_nbr": "Invoice",
+    "invoice_nbr": "Invoice",
+    "invoice_date": "ShipDate",
+    "part": "ProductCode",
+    "part_regex": null,
+    "ship_qty": "Qty",
+    "unit_rebate": null,
+    "rebate": "RebateAmt",
+    "name": "CustName",
+    "addr": null,
+    "city": "CustCity",
+    "state": "ST",
+    "uom": "Unit",
+    "cost": "ContCost",
+    "cost_calculation": "cost * ship_qty",
+    "addr1": "CustAddress1",
+    "addr2": "CustAddress2"
+}

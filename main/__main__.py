@@ -17,7 +17,7 @@ if __name__ == "__main__":
             """
     Usage:
 
-    --ingest_file --file_path=<file_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false>
+    --ingest_file --file_path=<file_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false> Optional [--delimiter=<delimiter>]
     --ingest_folder --folder_path=<folder_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false>
 
     --read_fields_file --fields_file=<fields_file:string>
@@ -141,6 +141,8 @@ if __name__ == "__main__":
                 year=options["year"],
                 month=options["month"],
                 overwrite=options["overwrite"],
+                delimiter=options.get("delimiter", ","),
+                header_row=int(options.get("header_row", 0)),
             )
 
         elif sys.argv[1] == "--ingest_folder":
@@ -285,6 +287,24 @@ if __name__ == "__main__":
                 delete_documents(collection, options["filter"])
             else:
                 print(get_documents(collection, options["filter"]))
+
+        elif sys.argv[1] == "--clean_up_mohawk_csv":
+            options = {}
+            for arg in sys.argv[2:]:
+                if arg.startswith("--"):
+                    key, value = arg.lstrip("--").split("=")
+                    options[key] = value
+
+            assert "file_path" in options, "file_path is required"
+
+            with open(options.get("file_path", None), "r") as f:
+                lines = f.readlines()
+
+            with open(options.get("file_path", None), "w") as f:
+                for line in lines:
+                    line.replace('="', "")
+                    line.replace('"', "")
+                    f.write(line)
 
         elif sys.argv[1] == "--test":
             df = pd.DataFrame(["hello", "world"])
