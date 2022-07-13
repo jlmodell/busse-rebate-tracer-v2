@@ -4,6 +4,9 @@
 /Scripts
 /**/__pycache__
 /.vscode
+/lib64
+/include
+/Include
 
 /**/*.cfg
 /**/*.html
