@@ -1,0 +1,5 @@
+MONGODB_URI="mongodb+srv://jmodell:5T1aBQa7@busseforce0.9fmow.mongodb.net/bussepricing?retryWrites=true&w=majority"
+S3_ACCESS_KEY="Y3V8KS358F49EWPC8F47"
+S3_SECRET_KEY="oGqeTFL3AJslegushPamy3Mce4BeUCqWMWFJuFrg"
+S3_URL="https://s3.wasabisys.com"
+S3_BUCKET="busserebatetracing"

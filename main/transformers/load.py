@@ -16,15 +16,13 @@ def FIX_NAME(name: str) -> str:
         if re.search("edwin sha", name, re.IGNORECASE)
         else name
     )
-    name = "roper hospital" if re.search(
-        r"rh stock", name, re.IGNORECASE) else name
+    name = "roper hospital" if re.search(r"rh stock", name, re.IGNORECASE) else name
     name = (
         "texas health harris southwest"
         if re.search(r"^thc", name, re.IGNORECASE)
         else name
     )
-    name = "kintegra health" if re.search(
-        r"^kh", name, re.IGNORECASE) else name
+    name = "kintegra health" if re.search(r"^kh", name, re.IGNORECASE) else name
     name = (
         "ur orthopaedics (victor)"
         if re.search("university of roch", name, re.IGNORECASE)
@@ -35,8 +33,7 @@ def FIX_NAME(name: str) -> str:
         if re.search(r"^chws", name, re.IGNORECASE)
         else name
     )
-    name = "chavies clinic" if re.search(
-        r"^shifa", name, re.IGNORECASE) else name
+    name = "chavies clinic" if re.search(r"^shifa", name, re.IGNORECASE) else name
     name = (
         "mercy physician enterprises"
         if re.search(r"lambert family", name, re.IGNORECASE)
@@ -58,15 +55,12 @@ def FIX_NAME(name: str) -> str:
         else name
     )
     name = (
-        "northwell health" if re.search(
-            "^brett ruffo", name, re.IGNORECASE) else name
+        "northwell health" if re.search("^brett ruffo", name, re.IGNORECASE) else name
     )
     name = (
-        "the queens medical center" if re.search(
-            r"qmcp", name, re.IGNORECASE) else name
+        "the queens medical center" if re.search(r"qmcp", name, re.IGNORECASE) else name
     )
-    name = "lincolnhealth" if re.search(
-        "lincoln health", name, re.IGNORECASE) else name
+    name = "lincolnhealth" if re.search("lincoln health", name, re.IGNORECASE) else name
     name = (
         "albany ent and allergy svss pc"
         if re.search(r"^kinetic sports", name, re.IGNORECASE)
@@ -92,8 +86,7 @@ def FIX_NAME(name: str) -> str:
         if re.search(r"^rswny", name, re.IGNORECASE)
         else name
     )
-    name = "connect life" if re.search(
-        r"^unyts", name, re.IGNORECASE) else name
+    name = "connect life" if re.search(r"^unyts", name, re.IGNORECASE) else name
     name = "journeycare" if re.search(r"^jc", name, re.IGNORECASE) else name
     name = (
         "the neurology center"
@@ -121,8 +114,7 @@ def FIX_NAME(name: str) -> str:
         else name
     )
     name = (
-        "vitality medical" if re.search(
-            r"^vitality med", name, re.IGNORECASE) else name
+        "vitality medical" if re.search(r"^vitality med", name, re.IGNORECASE) else name
     )
     name = (
         "oak street health - truman"
@@ -172,8 +164,7 @@ def FIX_NAME(name: str) -> str:
         else name
     )
     name = (
-        "global medical response" if re.search(
-            r"^gmr", name, re.IGNORECASE) else name
+        "global medical response" if re.search(r"^gmr", name, re.IGNORECASE) else name
     )
     name = (
         "orthoarizona scottsdale asc"
@@ -258,10 +249,9 @@ def FIX_ADDRESS(addr1: str, addr2: str) -> str:
     return addr2
 
 
-def BUILD_SHOULD_QUERY(name: str = None,
-                       address: str = None,
-                       city: str = None,
-                       state: str = None):
+def BUILD_SHOULD_QUERY(
+    name: str = None, address: str = None, city: str = None, state: str = None
+):
     should = []
 
     if name:
@@ -326,8 +316,7 @@ def BUILD_AGGREGATION(
     city: str = None,
     state: str = None,
 ):
-    should = BUILD_SHOULD_QUERY(
-        name=name, address=address, city=city, state=state)
+    should = BUILD_SHOULD_QUERY(name=name, address=address, city=city, state=state)
 
     aggregation = [
         {
@@ -370,6 +359,13 @@ def CONVERT_UOM(item: dict, uom: str, qty: int) -> float:
         boxes = item["num_of_dispenser_boxes_per_case"]
 
         return qty / boxes if boxes != 0 else 0
+
+    if item["part"] in ["3220"] and re.search(r"^ct", uom, re.IGNORECASE):
+        return (
+            qty / item["num_of_dispenser_cases_per_case"]
+            if item["num_of_dispenser_cases_per_case"] != 0
+            else 0
+        )
 
     if item in ["795"] and re.search(r"^pk", uom, re.IGNORECASE):
         eaches = item["each_per_case"]

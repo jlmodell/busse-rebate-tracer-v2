@@ -1,9 +1,13 @@
 /Lib
 /lib
+/lib64
 /bin
 /Scripts
 /**/__pycache__
 /.vscode
+
+/share
+/include
 
 /**/*.cfg
 /**/*.html
@@ -15,3 +19,6 @@
 
 /build
 /dist
+
+/.s3
+*.sh

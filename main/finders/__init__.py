@@ -1,3 +1,4 @@
+import datetime
 import pandas as pd
 from functools import lru_cache
 import re
@@ -38,27 +39,6 @@ def find_contract_price(contract: str = None, part: str = None) -> float:
 
     return res["pricingagreements"][0]["price"] if res else 0.0
 
-# @lru_cache(maxsize=None)
-# def find_contract_price(contract: str = None, part: str = None) -> float:
-#     assert contract is not None, "contract cannot be None"
-
-#     contract = contract.upper().strip()
-#     part = part.upper().strip()
-
-#     collection = gc_rbt(CONTRACTS)
-
-#     res = collection.find_one({
-#         "contract": contract,
-#         f"agreement.{part}": {
-#             "$exists": True,
-#         },
-#     }, {
-#         "_id": 0,
-#         f"agreement.{part}": 1,
-#     })
-
-#     return res["agreement"][0][part] if res else 0.0
-
 
 @lru_cache(maxsize=None)
 def find_contract_name(contract: str = None) -> str:
@@ -79,6 +59,34 @@ def find_contract_name(contract: str = None) -> str:
     )
 
     return res["contractname"] if res else contract
+
+
+@lru_cache(maxsize=None)
+def find_contract_end_date(contract: str = None) -> str:
+    assert contract is not None, "contract cannot be None"
+
+    contract = contract.upper().strip()
+
+    collection = gc_bp(PRICING_CONTRACTS)
+
+    res = collection.find_one(
+        {
+            "contractnumber": contract,
+        },
+        {
+            "_id": 0,
+            "contractend": 1,
+        },
+    )
+
+    contractend = "UNKNOWN"
+
+    if res:
+        contractend = res["contractend"]
+        if type(contractend) is datetime.datetime:
+            contractend = "{:%Y-%m-%d}".format(contractend)
+
+    return contractend[0:10]
 
 
 def find_tracings_by_period(period: str = None) -> pd.DataFrame:
@@ -123,6 +131,7 @@ def find_tracings_by_period(period: str = None) -> pd.DataFrame:
     )
 
     df["contract_name"] = df["contract"].apply(find_contract_name)
+    df["contract_end"] = df["contract"].apply(find_contract_end_date)
 
     return df
 

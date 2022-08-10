@@ -50,7 +50,15 @@ def TRANSFORM_BY_DISTRIBUTOR_BY_CONTRACT_BY_PART(df: pd.DataFrame) -> Tuple:
     df = pd.DataFrame(
         df[df["contract"] != ""]
         .groupby(
-            ["period", "contract", "part", "uom", "contract_price", "contract_name"],
+            [
+                "period",
+                "contract",
+                "part",
+                "uom",
+                "contract_price",
+                "contract_name",
+                "contract_end",
+            ],
             as_index=False,
         )  # added "uom" removed "each_size"
         .sum(["ship_qty", "ship_qty_as_cs", "rebate", "cost"])
@@ -90,6 +98,7 @@ def TRANSFORM_BY_DISTRIBUTOR_BY_CONTRACT_BY_PART(df: pd.DataFrame) -> Tuple:
             "each_size",
             "contract",
             "contract_name",
+            "contract_end",
             "part",
             "contract_price",
             "ship_qty",  # added

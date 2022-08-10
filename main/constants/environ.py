@@ -1,8 +1,8 @@
 from dotenv import load_dotenv
 import os
 
-load_dotenv(os.path.join(os.environ["USERPROFILE"], ".env"))
-# load_dotenv(os.path.join(os.getcwd(), '.env'))
+# load_dotenv(os.path.join(os.environ["USERPROFILE"], ".env"))
+load_dotenv(os.path.join(os.getcwd(), '.env'))
 
 assert os.environ["MONGODB_URI"], "MONGODB_URI not set"
 assert os.environ["S3_ACCESS_KEY"], "S3_ACCESS_KEY not set"
