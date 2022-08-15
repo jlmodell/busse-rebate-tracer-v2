@@ -362,8 +362,8 @@ def CONVERT_UOM(item: dict, uom: str, qty: int) -> float:
 
     if item["part"] in ["3220"] and re.search(r"^ct", uom, re.IGNORECASE):
         return (
-            qty / item["num_of_dispenser_cases_per_case"]
-            if item["num_of_dispenser_cases_per_case"] != 0
+            qty / item["num_of_dispenser_boxes_per_case"]
+            if item["num_of_dispenser_boxes_per_case"] != 0
             else 0
         )
 
@@ -379,7 +379,7 @@ def CONVERT_UOM(item: dict, uom: str, qty: int) -> float:
         if uom in EACH_ALIAS:
             return qty / eaches if eaches != 0 else 0
         elif uom in BOX_ALIAS:
-            return qty / boxes if boxes != 0 else 0
+            return qty / boxes if boxes != 0 else qty / eaches if eaches != 0 else 0
         elif uom in CASE_ALIAS:
             return qty
         else:
