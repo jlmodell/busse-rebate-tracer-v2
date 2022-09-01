@@ -6,14 +6,14 @@ import numpy as np
 
 
 def GET_DTYPES(file_path: str, delimiter: str = ",", header_row: int = 0) -> dict:
-    if re.search(r".xl(sx|sm|s)$", file_path, re.I):
+    if re.search(r".xl(sx|sm|s)$", file_path, re.IGNORECASE):
         dtypes = dict(
             pd.read_excel(
                 file_path,
                 header=header_row if header_row != -1 else None,
             ).dtypes
         )
-    elif re.search(r".(csv|txt)$", file_path, re.I):
+    elif re.search(r".(csv|txt)$", file_path, re.IGNORECASE):
         dtypes = dict(
             pd.read_csv(
                 file_path,
@@ -22,9 +22,12 @@ def GET_DTYPES(file_path: str, delimiter: str = ",", header_row: int = 0) -> dic
             ).dtypes,
         )
 
-    for key in dtypes.keys():
-        if re.search(r"(PART|CAT|MATERIAL|ITEM)", key, re.IGNORECASE):
-            dtypes[key] = "str"
+    try:
+        for key in dtypes.keys():
+            if re.search(r"(PART|CAT|MATERIAL|ITEM)", key, re.IGNORECASE):
+                dtypes[key] = "str"
+    except Exception as e:
+        print(e)
 
     return dtypes
 

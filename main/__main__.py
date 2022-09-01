@@ -17,7 +17,7 @@ if __name__ == "__main__":
             """
     Usage:
 
-    --ingest_file --file_path=<file_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false> Optional [--delimiter=<delimiter>]
+    --ingest_file --file_path=<file_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false> Optional [--delimiter=<delimiter> --header_row=<-1,0,1>]
     --ingest_folder --folder_path=<folder_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false>
 
     --read_fields_file --fields_file=<fields_file:string>

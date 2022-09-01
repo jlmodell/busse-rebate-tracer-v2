@@ -69,7 +69,14 @@ def ingest_to_data_warehouse(
 
         print("Overwriting")
 
-        delete_documents(collection, {"__file__": os.path.basename(file_path)})
+        delete_documents(
+            collection,
+            {
+                "__file__": os.path.basename(file_path),
+                "__year__": year,
+                "__month__": month,
+            },
+        )
 
         insert_documents(collection, df.to_dict("records"))
 
@@ -264,9 +271,17 @@ def build_df_from_warehouse_using_fields_file(fields_file: str) -> pd.DataFrame:
 
     # initialize dataframe
 
-    df = pd.DataFrame(get_documents(data_warehouse_collection, filter))
+    print(filter)
+
+    datawarehouse = get_documents(data_warehouse_collection, filter)
+
+    print(datawarehouse)
+
+    df = pd.DataFrame(datawarehouse)
 
     # /initialize dataframe
+
+    print(df)
 
     # clean df
 
