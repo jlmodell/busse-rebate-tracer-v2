@@ -352,13 +352,19 @@ def BUILD_AGGREGATION(
 
 
 def CONVERT_UOM(item: dict, uom: str, qty: int) -> float:
-    if item["part"] in ["139", "153", "283", "284"] and uom in BOX_ALIAS:
+    if item["part"] in ["139", "153", "283", "284", "7190"] and uom in BOX_ALIAS:
         return qty
 
     if item["part"] in ["164"] and re.search(r"^pk", uom, re.IGNORECASE):
         boxes = item["num_of_dispenser_boxes_per_case"]
 
         return qty / boxes if boxes != 0 else 0
+
+    if item["part"] in ["770"] and re.search(r"^pk", uom, re.IGNORECASE):
+        qty = qty * 12
+        eaches = 48
+
+        return qty / eaches
 
     if item["part"] in ["3220"] and re.search(r"^ct", uom, re.IGNORECASE):
         return (
