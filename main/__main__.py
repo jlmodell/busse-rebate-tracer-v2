@@ -1,45 +1,123 @@
-import sys
+import json
 import os
-from rich import print
+import re
+import sys
 
-from constants import *
-from database import *
+import pandas as pd
+from constants import DATA_WAREHOUSE, TRACINGS
+from database import (
+    delete_documents,
+    gc_rbt,
+    get_documents,
+    insert_documents,
+    push_to_redis_queue,
+)
+from finders import find_tracings_and_save
+from s3_functions import (
+    save_df_to_s3_as_excel,
+    save_tracings_df_as_html_with_javascript_css,
+    update_field_file_body_and_save,
+)
+from transformers import (
+    GET_CLEAN_DF_TO_INGEST,
+    build_df_from_df_fields_file,
+    build_df_from_warehouse_using_fields_file,
+    get_field_file_body_and_decode_kwargs,
+    ingest_concordance_data_files,
+    ingest_to_data_warehouse,
+)
 
-from s3_storage import *
-from s3_functions import *
+# from constants import *
+# from database import *
+# from finders import *
+# from rich import print
+# from s3_functions import *
+# from s3_storage import *
+# from transformers import *
 
-from finders import *
-from transformers import *
+
+def main():
+
+    file_path = r"/mnt/c/temp/concordance_we_230120.xlsx"
+
+    options = dict(
+        file_path=file_path,
+        year="2023",
+        month="01",
+        overwrite=True,
+        delimiter=",",
+        header_row=0,
+        fields_file="concordance.json",
+    )
+
+    dtype = dict(
+        pd.read_excel(
+            options["file_path"],
+            header=options["header_row"] if options["header_row"] != -1 else None,
+        ).dtypes
+    )
+
+    try:
+        for key in dtype.keys():
+            if re.search(r"(PART|CAT|MATERIAL|ITEM)", key, re.IGNORECASE):
+                dtype[key] = "str"
+    except Exception as e:
+        print(e)
+
+    df = pd.read_excel(options["file_path"], dtype=dtype, header=options["header_row"])
+
+    df = GET_CLEAN_DF_TO_INGEST(
+        df=df,
+        file_path=options["file_path"],
+        month=options["month"],
+        year=options["year"],
+    )
+
+    df = build_df_from_df_fields_file(df, options["fields_file"])
+
+    # convert df to json
+    result = df.to_json(orient="table", index=False)
+
+    parsed = json.loads(result)["data"]
+
+    for row in parsed:
+        push_to_redis_queue(row)
+
+    return df, parsed
+
 
 if __name__ == "__main__":
+
     if len(sys.argv) <= 1:
-        print(
-            """
-    Usage:
+        #         print(
+        #             """
+        #     Usage:
 
-    --ingest_file --file_path=<file_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false> Optional [--delimiter=<delimiter> --header_row=<-1,0,1>]
-    --ingest_folder --folder_path=<folder_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false>
+        #     --ingest_file --file_path=<file_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false> Optional [--delimiter=<delimiter> --header_row=<-1,0,1>]
+        #     --ingest_folder --folder_path=<folder_path> --year=<year:yyyy> --month=<month:mm> --overwrite=<true|false>
 
-    --read_fields_file --fields_file=<fields_file:string>
-    --update_fields_file --fields_file=<fields_file:string> --month=<month:string> --year=<year:string> _
-        --filter=<__file__:string;__month__:string;__year__:string> --overwrite=<true|false> 
-    
-        eg) '{\\"__file__\\":\\"NDC_Rebate_Sales_Trace_202205.xlsx\\",\\"__month__\\":\\"05\\",\\"__year__\\":\\"2022\\"}'
-        eg) '{\\"__file__\\":\\"^concordance(?!.*mms).*220610.xls$\\",\\"__month__\\":\\"05\\",\\"__year__\\":\\"2022\\"}'
+        #     --read_fields_file --fields_file=<fields_file:string>
+        #     --update_fields_file --fields_file=<fields_file:string> --month=<month:string> --year=<year:string> _
+        #         --filter=<__file__:string;__month__:string;__year__:string> --overwrite=<true|false>
 
-    --update_tracing_data --fields_file=<fields_file> --overwrite=<true|false>
- 
-    --find_tracings_by_period --month=<month:string> --year=<year:string> --overwrite=<true|false>
+        #         eg) '{\\"__file__\\":\\"NDC_Rebate_Sales_Trace_202205.xlsx\\",\\"__month__\\":\\"05\\",\\"__year__\\":\\"2022\\"}'
+        #         eg) '{\\"__file__\\":\\"^concordance(?!.*mms).*220610.xls$\\",\\"__month__\\":\\"05\\",\\"__year__\\":\\"2022\\"}'
 
-    --delete_data_warehouse_by_filter --filter=<__file__:string;__month__:string;__year__:string> --overwrite=<true|false>
+        #     --update_tracing_data --fields_file=<fields_file> --overwrite=<true|false>
 
-        eg) '{\\"__file__\\":\\"NDC_Rebate_Sales_Trace_202205.xlsx\\",\\"__month__\\":\\"05\\",\\"__year__\\":\\"2022\\"}'
-        eg) '{\\"__file__\\":\\"^concordance(?!.*mms).*220610.xls$\\",\\"__month__\\":\\"05\\",\\"__year__\\":\\"2022\\"}'
+        #     --find_tracings_by_period --month=<month:string> --year=<year:string> --overwrite=<true|false>
 
-    python main.py --debug
-    python main.py --test
-"""
-        )
+        #     --delete_data_warehouse_by_filter --filter=<__file__:string;__month__:string;__year__:string> --overwrite=<true|false>
+
+        #         eg) '{\\"__file__\\":\\"NDC_Rebate_Sales_Trace_202205.xlsx\\",\\"__month__\\":\\"05\\",\\"__year__\\":\\"2022\\"}'
+        #         eg) '{\\"__file__\\":\\"^concordance(?!.*mms).*220610.xls$\\",\\"__month__\\":\\"05\\",\\"__year__\\":\\"2022\\"}'
+
+        #     python main.py --debug
+        #     python main.py --test
+        # """
+        #         )
+
+        df, result = main()
 
     if len(sys.argv) > 1:
         if sys.argv[1] == "--help":
@@ -138,6 +216,43 @@ if __name__ == "__main__":
 
             ingest_to_data_warehouse(
                 file_path=options["file_path"],
+                year=options["year"],
+                month=options["month"],
+                overwrite=options["overwrite"],
+                delimiter=options.get("delimiter", ","),
+                header_row=int(options.get("header_row", 0)),
+            )
+
+        elif sys.argv[1] == "--ingest_file_s3":
+            options = {}
+            for arg in sys.argv[2:]:
+                if arg.startswith("--"):
+                    key, value = arg.lstrip("--").split("=")
+                    options[key] = value
+
+            try:
+                if options["overwrite"]:
+                    options["overwrite"] = (
+                        True if options["overwrite"].lower().startswith("t") else False
+                    )
+            except KeyError:
+                options["overwrite"] = False
+                print(
+                    "\n\tOverwrite: \t> ",
+                    options["overwrite"],
+                    "\t> ",
+                    "set `--overwrite=true` to overwrite\n",
+                )
+
+            assert "prefix" in options, "--prefix is required"
+            assert "key" in options, "--key is required"
+            assert "year" in options, "--year is required"
+            assert "month" in options, "--month is required"
+
+            ingest_to_data_warehouse(
+                file_path=None,
+                prefix=options["prefix"],
+                key=options["key"],
                 year=options["year"],
                 month=options["month"],
                 overwrite=options["overwrite"],

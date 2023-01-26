@@ -1,7 +1,12 @@
+from constants import (
+    BUSSE_PRICING,
+    BUSSE_PRICING_COLLECTIONS,
+    BUSSE_REBATE_TRACES,
+    BUSSE_REBATE_TRACES_COLLECTIONS,
+    DATABASES,
+    MONGODB_URI,
+)
 from pymongo import MongoClient
-
-from constants import BUSSE_REBATE_TRACES, BUSSE_REBATE_TRACES_COLLECTIONS, BUSSE_PRICING, BUSSE_PRICING_COLLECTIONS, MONGODB_URI, DATABASES
-
 from pymongo.collection import Collection
 from pymongo.database import Database
 
@@ -14,12 +19,16 @@ def GET_DATABASE(client: MongoClient, DATABASE: str) -> Database:
     __db__ = DATABASE.upper().strip()
 
     if __db__ == BUSSE_REBATE_TRACES:
-        assert __db__ in DATABASES, f"{DATABASE} not in the databases list, check database_constants.py"
+        assert (
+            __db__ in DATABASES
+        ), f"{DATABASE} not in the databases list, check database_constants.py"
 
         return client[DATABASES[__db__]]
 
     if __db__ == BUSSE_PRICING:
-        assert __db__ in DATABASES, f"{DATABASE} not in the databases list, check database_constants.py"
+        assert (
+            __db__ in DATABASES
+        ), f"{DATABASE} not in the databases list, check database_constants.py"
 
         return client[DATABASES[__db__]]
 

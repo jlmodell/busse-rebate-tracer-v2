@@ -1,5 +1,9 @@
+import json
+
+from constants import CONTRACTS, PRICING_CONTRACTS, REDIS_QUEUE, SCHED_DATA
+
 from .connector import *
-from constants import CONTRACTS, PRICING_CONTRACTS
+from .redis_connector import *
 
 
 def gc_rbt(collection_key: str) -> Collection:
@@ -26,11 +30,16 @@ def insert_documents(collection: Collection, documents: list) -> None:
     print(res)
 
 
+def find_distinct_parts():
+    collection = gc_rbt(SCHED_DATA)
+
+    return list(collection.distinct("part"))
+
+
 def get_current_contracts():
     collection = gc_rbt(CONTRACTS)
 
-    return {x["contract"]: x["gpo"]
-            for x in list(collection.find({"valid": True}))}
+    return {x["contract"]: x["gpo"] for x in list(collection.find({"valid": True}))}
 
 
 def find_contract_by_contract_number(contract_number: str = None) -> dict:
@@ -38,12 +47,22 @@ def find_contract_by_contract_number(contract_number: str = None) -> dict:
 
     collection = gc_bp(PRICING_CONTRACTS)
 
-    res = collection.find_one({
-        "contractnumber": contract_number,
-    }, {"_id": 0})
+    res = collection.find_one(
+        {
+            "contractnumber": contract_number,
+        },
+        {"_id": 0},
+    )
 
     return res
 
 
 def get_documents(collection: Collection, filter: dict) -> list:
     return list(collection.find(filter))
+
+
+# redis function
+
+
+def push_to_redis_queue(data: dict) -> None:
+    rdb.rpush(REDIS_QUEUE, json.dumps(data))
